@@ -5,7 +5,7 @@ from openai import OpenAI
 
 API_BASE_URL = os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1")
 MODEL_NAME = os.environ.get("MODEL_NAME", "meta-llama/Llama-3.3-70B-Instruct")
-HF_TOKEN = os.environ.get("HF_TOKEN", "not-needed")
+HF_TOKEN = os.getenv("HF_TOKEN")
 BASE_URL = os.environ.get("SPACE_URL", "http://localhost:8000")
 
 llm = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
