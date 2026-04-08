@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment / secrets
+.env
+.env.*
+.venv/
+venv/
+
+# Lock files
+uv.lock
+
+# Logs & outputs
+*.log
+outputs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+
+# Claude internal prompts (not project code)
+claude.md
+claude_code_prompt.md
+CLAUDE.md
