@@ -3,14 +3,19 @@ import difflib
 from typing import List, Optional
 
 
+def _strict_clamp(score: float) -> float:
+    """Clamp score to strictly (0, 1) — never exactly 0.0 or 1.0."""
+    return max(0.01, min(0.99, float(score)))
+
+
 def grade_conflict_identification(predicted_ids: List[str], ground_truth_ids: List[str]) -> float:
     """Grade conflict identification using F1 score."""
     if not predicted_ids and not ground_truth_ids:
-        return 1.0
+        return _strict_clamp(0.99)
     if not predicted_ids:
-        return 0.0
+        return _strict_clamp(0.01)
     if not ground_truth_ids:
-        return 0.0
+        return _strict_clamp(0.01)
 
     predicted_set = set(predicted_ids)
     truth_set = set(ground_truth_ids)
@@ -20,10 +25,10 @@ def grade_conflict_identification(predicted_ids: List[str], ground_truth_ids: Li
     recall = len(overlap) / len(truth_set)
 
     if precision + recall == 0:
-        return 0.0
+        return _strict_clamp(0.01)
 
     f1 = 2 * precision * recall / (precision + recall)
-    return max(0.0, min(1.0, f1))
+    return _strict_clamp(f1)
 
 
 def grade_compromise(
@@ -64,9 +69,9 @@ Respond with ONLY valid JSON: {{"score": <float 0.0-1.0>, "reason": "<one senten
             text = text.strip()
         result = json.loads(text)
         score = float(result.get("score", 0.5))
-        return max(0.0, min(1.0, score))
+        return _strict_clamp(score)
     except Exception:
-        return 0.5
+        return 0.50
 
 
 def grade_final_contract(
@@ -116,11 +121,11 @@ Respond ONLY with JSON: {{"resolved": true|false}}"""
                 resolved_count += 1
         except Exception:
             pass
-    conflict_resolution = resolved_count / len(ground_truth) if ground_truth else 1.0
+    conflict_resolution = resolved_count / len(ground_truth) if ground_truth else 0.99
 
     # --- Non-negotiable respect (weight 0.20) ---
     if not non_negotiable:
-        non_negotiable_score = 1.0
+        non_negotiable_score = 0.99
     else:
         matched_nn = 0
         # Build a map of clause_id -> vendor_text from ground_truth
@@ -163,7 +168,7 @@ Respond ONLY with JSON: {{"score": <float 0.0-1.0>}}"""
             text = text.strip()
         result = json.loads(text)
         coherence = float(result.get("score", 0.5))
-        coherence = max(0.0, min(1.0, coherence))
+        coherence = _strict_clamp(coherence)
     except Exception:
         coherence = 0.5
 
@@ -174,4 +179,4 @@ Respond ONLY with JSON: {{"score": <float 0.0-1.0>}}"""
         + 0.20 * non_negotiable_score
         + 0.20 * coherence
     )
-    return max(0.0, min(1.0, final_score))
+    return _strict_clamp(final_score)

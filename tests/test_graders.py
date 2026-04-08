@@ -10,13 +10,13 @@ from server.graders import grade_conflict_identification, grade_final_contract
 def test_f1_perfect():
     predicted = ["clause_2", "clause_4", "clause_5"]
     truth = ["clause_2", "clause_4", "clause_5"]
-    assert grade_conflict_identification(predicted, truth) == 1.0
+    assert 0.9 < grade_conflict_identification(predicted, truth) < 1.0
 
 
 def test_f1_zero():
     predicted = ["clause_1", "clause_3"]
     truth = ["clause_2", "clause_4", "clause_5"]
-    assert grade_conflict_identification(predicted, truth) == 0.0
+    assert 0.0 < grade_conflict_identification(predicted, truth) < 0.1
 
 
 def test_f1_half_recall():
@@ -31,7 +31,7 @@ def test_f1_half_recall():
 def test_f1_empty_predicted():
     predicted = []
     truth = ["clause_2", "clause_4", "clause_5"]
-    assert grade_conflict_identification(predicted, truth) == 0.0
+    assert 0.0 < grade_conflict_identification(predicted, truth) < 0.1
 
 
 def test_final_contract_score_range():
@@ -69,4 +69,4 @@ def test_final_contract_score_range():
         "test-model",
     )
     assert isinstance(score, float)
-    assert 0.0 <= score <= 1.0
+    assert 0.0 < score < 1.0

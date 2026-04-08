@@ -10,6 +10,11 @@ from server.contract_fixtures import TASK_FIXTURES
 from server.graders import grade_conflict_identification, grade_compromise, grade_final_contract
 
 
+def _strict_clamp(reward: float) -> float:
+    """Clamp reward to strictly (0, 1) — never exactly 0.0 or 1.0."""
+    return max(0.01, min(0.99, float(reward)))
+
+
 class ContractNegotiationEnvironment(Environment[ContractAction, ContractObservation, ContractState]):
 
     def __init__(self, **kwargs):
@@ -119,11 +124,11 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
                     error_message=f"Invalid action_type: {action_type}. Must be one of: identify_conflicts, propose_compromise, accept_clause, flag_non_negotiable, finalize_contract",
                 )
         except Exception as e:
-            self._state.rewards_per_step.append(0.0)
+            self._state.rewards_per_step.append(0.01)
             return ContractObservation(
                 success=False,
                 message=f"Error processing action: {str(e)}",
-                reward=0.0,
+                reward=0.01,
                 done=False,
                 task_id=self._state.task_id,
                 current_step=self._state.step_count,
@@ -136,7 +141,7 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
         ground_truth_ids = [c["clause_id"] for c in self._fixture["ground_truth_conflicts"]]
 
         reward = grade_conflict_identification(predicted, ground_truth_ids)
-        reward = max(0.0, min(1.0, reward))
+        reward = _strict_clamp(reward)
 
         identified = [{"clause_id": cid, "found": cid in ground_truth_ids} for cid in predicted]
         self._state.conflicts_identified = identified
@@ -166,11 +171,11 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
                 break
 
         if conflict is None:
-            self._state.rewards_per_step.append(0.0)
+            self._state.rewards_per_step.append(0.01)
             return ContractObservation(
                 success=False,
                 message=f"Clause {clause_id} not found in ground truth conflicts.",
-                reward=0.0,
+                reward=0.01,
                 done=False,
                 task_id=self._state.task_id,
                 current_step=self._state.step_count,
@@ -183,7 +188,7 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
             conflict["vendor_text"], conflict["client_text"],
             self._llm, self._model,
         )
-        reward = max(0.0, min(1.0, reward))
+        reward = _strict_clamp(reward)
 
         compromise_record = {
             "clause_id": clause_id,
@@ -214,15 +219,15 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
 
         if clause_id in non_negotiable_list:
             # Accepting a non-negotiable clause from the original source is correct
-            reward = 1.0
+            reward = 0.95
         elif clause_id in conflict_ids:
             # Accepting a conflicting clause without compromise is penalized
-            reward = 0.3
+            reward = 0.30
         else:
             # Non-conflicting clause acceptance
-            reward = 0.8
+            reward = 0.80
 
-        reward = max(0.0, min(1.0, reward))
+        reward = _strict_clamp(reward)
 
         self._state.accepted_clauses.append({
             "clause_id": clause_id,
@@ -246,8 +251,8 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
         clause_id = action.clause_id or ""
         non_negotiable_list = self._fixture.get("non_negotiable_clauses", [])
 
-        reward = 1.0 if clause_id in non_negotiable_list else 0.0
-        reward = max(0.0, min(1.0, reward))
+        reward = 0.95 if clause_id in non_negotiable_list else 0.05
+        reward = _strict_clamp(reward)
 
         self._state.non_negotiable_flags.append(clause_id)
         self._state.rewards_per_step.append(reward)
@@ -267,7 +272,7 @@ class ContractNegotiationEnvironment(Environment[ContractAction, ContractObserva
         final_text = action.final_contract or ""
 
         reward = grade_final_contract(final_text, self._fixture, self._llm, self._model)
-        reward = max(0.0, min(1.0, reward))
+        reward = _strict_clamp(reward)
 
         self._state.done = True
         self._state.final_contract_submitted = True

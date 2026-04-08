@@ -38,7 +38,7 @@ def test_step_identify_conflicts_perfect(env):
         clause_ids=["clause_2", "clause_4", "clause_5"],
     )
     obs = env.step(action)
-    assert obs.reward == 1.0
+    assert 0.9 < obs.reward < 1.0
     assert obs.success is True
 
 
@@ -50,7 +50,7 @@ def test_step_identify_conflicts_empty(env):
         clause_ids=[],
     )
     obs = env.step(action)
-    assert obs.reward == 0.0
+    assert 0.0 < obs.reward < 0.1
 
 
 def test_step_finalize_produces_valid_score(env):
